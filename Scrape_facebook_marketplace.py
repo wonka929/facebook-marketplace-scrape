@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 
+
 def scrape(n_pag=5):
     for i in trange(n_pag):
         sleep(3)
@@ -26,20 +27,20 @@ def scrape(n_pag=5):
 
 ## Browser setup
 
-options = webdriver.EdgeOptions()
+options = webdriver.ChromeOptions()
 options.add_argument("--disable-infobars")
 #options.add_argument("start-maximized")
 options.add_argument("--disable-extensions")
 options.add_argument("--log-level=3")
 options.add_experimental_option("excludeSwitches", ["enable-logging"])
-options.add_argument('--window-size=1920,1080')
+options.add_argument('--window-size=1376,768')
 
 # Pass the argument 1 to allow and 2 to block
 options.add_experimental_option("prefs", { 
     "profile.default_content_setting_values.notifications": 1 
 })
 options.add_argument("headless")
-driver = webdriver.Edge(options=options)
+driver = webdriver.Chrome(options=options)
 
 
  ## Facebook Login
@@ -95,11 +96,11 @@ for file in os.listdir():
         output = pd.DataFrame()
         a = soup.findAll("div", {"class" : "kbiprv82"})
         for elem in a:
-            link = 'https://it-it.facebook.com' + elem.findAll("a", {"class" : "oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 p8dawk7l"})[0]['href']
-            prezzo = elem.findAll("span", {"class" : "d2edcug0 hpfvmrgz qv66sw1b c1et5uql lr9zc1uh a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 d3f4x2em mdeji52x a5q79mjw g1cxx5fr lrazzd5p oo9gr5id"})[0].text
+            link = '<a href=https://it-it.facebook.com' + elem.findAll("a", {"class" : "oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 p8dawk7l"})[0]['href'] + '>' + 'Link annuncio' + '</a>'
+            prezzo = elem.findAll("span", {"class" : "d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db a5q79mjw g1cxx5fr lrazzd5p oo9gr5id"})[0].text
             descrizione = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7"})[0].text
-            location = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5 ojkyduve"})[0].text
-            image = elem.find('img')['src']
+            location = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"})[0].text
+            image = '<img src="'+ elem.find('img')['src'] + '">'
 
             dic = {
                 'descrizione' : descrizione,
@@ -111,6 +112,7 @@ for file in os.listdir():
 
             output = output.append(dic, ignore_index=True)
         
-        output['prezzo'] = pd.to_numeric(output['prezzo'].str.replace('\xa0€', ''), errors='coerce')
+        output['prezzo'] = pd.to_numeric(output['prezzo'].str.replace('€\xa0', ''), errors='coerce')
         output = output.sort_values(by='prezzo').reset_index(drop=True)
         output.to_csv(file.split('.')[0] + '.csv', sep=';')
+        output.to_html(file.split('.')[0] + '_web.html', escape=False)
