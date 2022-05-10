@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[104]:
+# In[19]:
 
 
 from selenium import webdriver
@@ -14,8 +14,18 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 import re
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+import pickle
+from thefuzz import process
 
 
+
+with open('cities.pickle', 'rb') as f:
+    cities = pickle.load(f)
+
+    
 def scrape(n_pag=5):
     for i in trange(n_pag):
         sleep(3)
@@ -40,20 +50,20 @@ options.add_argument('--window-size=1376,768')
 options.add_experimental_option("prefs", { 
     "profile.default_content_setting_values.notifications": 1 
 })
-options.add_argument("headless")
+#options.add_argument("headless")
 driver = webdriver.Chrome(options=options)
 
 
  ## Facebook Login
 
 
-driver.get('https://it-it.facebook.com/login/?next=%2Fmarketplace%2F')
 
-driver.find_element(by='xpath', value="/html/body/div[3]/div[2]/div/div/div/div/div[3]/button[1]").click()
-driver.find_element(by='id', value="email").send_keys("xxx")
-driver.find_element(by='id', value="pass").send_keys("xxx")
-driver.find_element(by='id', value="loginbutton").click()
-sleep(8)
+    
+#driver.get('https://it-it.facebook.com/login/?next=%2Fmarketplace%2F')
+
+driver.get('https://it-it.facebook.com/marketplace/turin/search/?query=')
+
+WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Consenti solo i cookie essenziali']"))).click()
 
 print('\n //  Digitare "q" nella chiave di ricerca per uscire dal processo di scraping. // \n')
 
@@ -63,23 +73,19 @@ while True:
     if chiave_ricerca == 'q':
         break
     chiave_ricerca = chiave_ricerca.replace(' ',' ')
-    driver.get('https://it-it.facebook.com/marketplace/turin/search/?query=' + chiave_ricerca)
     
     citta = input("Inserisci la città: ")
+    identified = process.extractOne(citta, cities.keys())
+    print("Ho trovato questa città: procedo con essa...", "\n\t-", identified[0]), 
+    
+    id = str(cities[identified[0]])
     
     pagine = input("Inserisci il numero di pagine da analizzare: ")
     pagine = int(pagine)
-  
-    driver.find_element(by='xpath', value="/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[1]/div[2]/div[3]/div[2]/div[1]/div[1]/div/span").click()
-    sleep(1)
-    driver.find_element(by='xpath', value='/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div[3]/div/div[2]/div/div/div/div/div/label/div/div[2]/input').send_keys(Keys.CONTROL + "a")
-    driver.find_element(by='xpath', value='/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div[3]/div/div[2]/div/div/div/div/div/label/div/div[2]/input').send_keys(Keys.DELETE)
-    driver.find_element(by='xpath', value='/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div[3]/div/div[2]/div/div/div/div/div/label/div/div[2]/input').send_keys(citta)
-    sleep(2)
-    driver.find_element(by='xpath', value='/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div[3]/div/div[2]/div/div/div/div/div/label/div/div[2]/input').send_keys(Keys.DOWN)
-    driver.find_element(by='xpath', value='/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div[3]/div/div[2]/div/div/div/div/div/label/div/div[2]/input').send_keys(Keys.ENTER)
-    driver.find_element(by='xpath', value='/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div[4]/div/div[2]/div/div').click()
-    sleep(5)
+    
+    driver.get('https://it-it.facebook.com/marketplace/' + id + '/search/?query=' + chiave_ricerca)
+    
+    sleep(3)
     
     soup = scrape(pagine)
     
@@ -97,24 +103,28 @@ for file in os.listdir():
         output = pd.DataFrame()
         a = soup.findAll("div", {"class" : "kbiprv82"})
         for elem in a:
-            link = '<a href=https://it-it.facebook.com' + elem.findAll("a", {"class" : "oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 p8dawk7l"})[0]['href'] + '>' + 'Link annuncio' + '</a>'
-            prezzo = elem.findAll("span", {"class" : "d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db a5q79mjw g1cxx5fr lrazzd5p oo9gr5id"})[0].text
-            descrizione = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7"})[0].text
-            location = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"})[0].text
-            prezzo = re.findall(r'\b\d+\b', prezzo)[0]
-            image = '<img src="'+ elem.find('img')['src'] + '">'
-            dic = {
-                'descrizione' : descrizione,
-                'prezzo' : prezzo,
-                'location' : location,
-                'link' : link,
-                'immagine' : image
-            }
+            try:
+                link = '<a href=https://it-it.facebook.com' + elem.findAll("a", {"class" : "oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 p8dawk7l"})[0]['href'] + '>' + 'Link annuncio' + '</a>'
+                prezzo = elem.findAll("span", {"class" : "d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db a5q79mjw g1cxx5fr lrazzd5p oo9gr5id"})[0].text
+                descrizione = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7"})[0].text
+                location = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"})[0].text
+                prezzo = re.findall(r'\b\d+\b', prezzo)[0]
+                image = '<img src="'+ elem.find('img')['src'] + '">'
+                dic = {
+                    'descrizione' : descrizione,
+                    'prezzo' : prezzo,
+                    'location' : location,
+                    'link' : link,
+                    'immagine' : image
+                }
 
-            output = output.append(dic, ignore_index=True)
+                output = output.append(dic, ignore_index=True)
+            except Exception as e:
+                print(e)
+                continue
         
-        print(output['prezzo'])
         output['prezzo'] = pd.to_numeric(output['prezzo'], errors='coerce')
         output = output.sort_values(by='prezzo').reset_index(drop=True)
         output.to_csv(file.split('.')[0] + '.csv', sep=';')
         output.to_html(file.split('.')[0] + '_web.html', escape=False)
+
