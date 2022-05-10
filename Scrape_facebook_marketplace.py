@@ -13,6 +13,7 @@ import pandas as pd
 import warnings
 warnings.filterwarnings('ignore')
 import os
+import re
 
 
 def scrape(n_pag=5):
@@ -100,8 +101,8 @@ for file in os.listdir():
             prezzo = elem.findAll("span", {"class" : "d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db a5q79mjw g1cxx5fr lrazzd5p oo9gr5id"})[0].text
             descrizione = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7"})[0].text
             location = elem.findAll("span", {"class" : "a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"})[0].text
+            prezzo = re.findall(r'\b\d+\b', prezzo)[0]
             image = '<img src="'+ elem.find('img')['src'] + '">'
-
             dic = {
                 'descrizione' : descrizione,
                 'prezzo' : prezzo,
@@ -112,7 +113,8 @@ for file in os.listdir():
 
             output = output.append(dic, ignore_index=True)
         
-        output['prezzo'] = pd.to_numeric(output['prezzo'].str.replace('€\xa0', ''), errors='coerce')
+        print(output['prezzo'])
+        output['prezzo'] = pd.to_numeric(output['prezzo'], errors='coerce')
         output = output.sort_values(by='prezzo').reset_index(drop=True)
         output.to_csv(file.split('.')[0] + '.csv', sep=';')
         output.to_html(file.split('.')[0] + '_web.html', escape=False)
